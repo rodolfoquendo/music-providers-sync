@@ -1,0 +1,12 @@
+.env
+api/ytmusic_auth.json
+/tmp/.spotify_token_cache
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+node_modules/
+dist/
+.vite/
+*.log
+oauth.json
