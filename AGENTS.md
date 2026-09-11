@@ -2,6 +2,14 @@
 
 Syncs music between Spotify and YouTube Music, scans local folders, stores full track metadata in MySQL, and serves a web UI with a multi-source player.
 
+`music-providers-sync` is a standalone music management tool that:
+- Syncs playlists and liked songs **from Spotify** into a local MySQL database
+- Pushes those playlists **to YouTube Music**
+- Scans a **local music folder** and merges file metadata into the same DB
+- Serves a **React web UI** with a multi-source player (local, Spotify SDK, YouTube iframe)
+
+The MySQL database (`music`) lives on the shared `ie-api-db` container (MySQL 8, host port 3306). This is the same container used by `insignia-education/api`, but a completely separate database — **never touch the `insignia` DB from this repo.**
+
 ## Requirements
 - Docker + Docker Compose
 - A Spotify app registered at https://developer.spotify.com/dashboard
@@ -13,19 +21,33 @@ cp .env.example .env       # fill in SPOTIFY_CLIENT_ID, SPOTIFY_CLIENT_SECRET, D
 make up                    # build and start API (port 8002) + frontend (port 3002)
 ```
 
-App runs at `http://localhost:3002`. API at `http://localhost:8002`.
+App runs at `http://localhost:3002`. API at `http://localhost:8002` (FastAPI auto-reload in dev mode).
 
 ## Stack
 | Layer | Tech |
 |---|---|
-| Backend | Python 3.12 + FastAPI + SQLAlchemy 2 |
+| Backend | Python 3.12 + FastAPI + SQLAlchemy 2 + Pydantic v2 |
 | Spotify | `spotipy` (OAuth Authorization Code) |
 | YouTube Music | `ytmusicapi` (browser header auth — unofficial) |
 | Local music | `mutagen` |
-| Frontend | React 19 + Vite 8 + Bootstrap 5.3 |
+| Frontend | React 19 + Vite 8 + Bootstrap 5.3 + React Router v7 |
 | Player | Spotify Web Playback SDK + YouTube iframe API + HTML5 `<audio>` |
 | Database | MySQL 8 (`music` DB on existing `ie-api-db` container, port 3306) |
 | Containers | Own `docker-compose.yml` — API :8002, frontend :3002 |
+
+### Backend conventions
+- **Routers** (`app/routers/`) — HTTP layer only. No business logic here.
+- **Services** (`app/services/`) — All Spotify/YouTube/local I/O. Routers call services.
+- **Models** (`app/models/`) — SQLAlchemy ORM models, one file per table.
+- **Schemas** (`app/schemas/`) — Pydantic v2 input/output schemas.
+- Config is always read through `config.py` (`get_settings()`), never directly from `os.environ`.
+- DB sessions injected via `Depends(get_db)`.
+- Long-running syncs (`_run_spotify_import`, `_run_youtube_export`) use `BackgroundTasks` and create their own `SessionLocal()` — they cannot use the request-scoped session.
+
+### Frontend conventions
+- All API calls go through `src/api/client.js` (`api.*` methods) — never raw `fetch` in components.
+- Player state lives in `PlayerContext`. Auth/connection state lives in `AuthContext`.
+- No prop drilling — use contexts.
 
 ## Structure
 ```
@@ -62,8 +84,8 @@ make logs          # tail logs
 make shell-api     # bash into music-api container
 make scan-local    # POST /local/scan
 make ytmusic-setup # one-time YouTube Music auth setup
-make dev-api       # run API locally (no Docker)
-make dev-front     # run Vite dev server locally
+make dev-api       # run API locally, uvicorn on :8002 (no Docker, fast iteration)
+make dev-front     # run Vite dev server locally on :5173 (proxies /api → :8002)
 ```
 
 ## Database (music DB on ie-api-db)
@@ -83,12 +105,13 @@ Tables created automatically on first API startup via `Base.metadata.create_all`
 2. Add redirect URI: `http://localhost:8002/auth/spotify/callback`
 3. Set `SPOTIFY_CLIENT_ID` and `SPOTIFY_CLIENT_SECRET` in `.env`
 4. Visit `http://localhost:8002/auth/spotify/login` → authorize → done
-5. **Requires Spotify Premium** for the Web Playback SDK player
+5. **Requires Spotify Premium** for the Web Playback SDK player. If the user is on the Free tier, the player falls through to YouTube or a preview URL.
+6. The OAuth token is cached at `/tmp/.spotify_token_cache` inside the container and auto-refreshes via `spotipy`. If the cache is missing, redirect to `GET /auth/spotify/login`.
 
 ### YouTube Music
 1. Run `make ytmusic-setup` (inside the API container)
 2. Paste your browser headers from a logged-in YouTube Music session (see ytmusicapi docs)
-3. Output is saved as `api/ytmusic_auth.json`
+3. Output is saved as `api/ytmusic_auth.json` (gitignored)
 4. Restart the container — `youtube_service.py` reads this file on init
 5. **Re-auth required** when the session expires (~30 days)
 
@@ -120,35 +143,13 @@ track.youtube_id   → YouTube iframe API
 - Don't commit `api/ytmusic_auth.json` or `.env` — both are gitignored
 - Don't write business logic in routers — put it in services
 - Don't hardcode credentials — use `.env` via `config.py`
+- Don't touch the `insignia` database on the shared `ie-api-db` container — see above
 
+## Working style and communication
+See [`.ai/guidelines/working-style.md`](.ai/guidelines/working-style.md) for coding style and communication conventions (think before coding, surgical changes, caveman-mode responses).
 
-## Communication style
-- Respond as briefly as possible. Caveman mode: shortest answer that works. No fluff, no summaries, no "here is what I did".
+## Git
+See [`.ai/guidelines/git-safety.md`](.ai/guidelines/git-safety.md) — critical rules on never running destructive git commands, and on commit authorship (never commit in an agent's name).
 
----
-
-## Git safety (CRITICAL — read every session)
-
-**DO NOT MESS WITH GIT.** DO NOT run `git checkout`, `git stash`, `git reset`, `git restore`,
-`git clean`, or any command that discards or overwrites working-tree changes. These repos often
-carry large amounts of **uncommitted** work, and these commands will destroy it irreversibly.
-
-If you need to change the current branch: **commit the work first, or ask the user to commit.**
-Never revert, discard, or overwrite changes via git without explicit permission from the user.
-
-## NEVER TOUCH `insignia-education/infra/envs`
-
-**Read-only. Never create, edit, move, or delete anything under
-`insignia-education/infra/envs/` — not one line, for any reason.**
-
-That directory is the owner's personal record of the deployed environments,
-kept manually on their machine. It is gitignored, so there is no history and
-**nothing there can be recovered from git.** A prod env file was already lost
-once this way.
-
-- Need to know what a deployed env contains? Read it, don't write it.
-- An env var needs to change? Say so and let the owner make the edit.
-- Recovering a lost env: the deploy pipeline stores the authoritative copy in
-  AWS SSM Parameter Store (e.g. `/ie/api/env-prod`), and the EC2 host holds a
-  `chmod 600` copy at the deploy's `ENV_FILE_PATH`. Restore from SSM, and hand
-  the file to the owner rather than writing into `envs/` yourself.
+## Restricted paths
+See [`.ai/docs/insignia-envs.md`](.ai/docs/insignia-envs.md) — `insignia-education/infra/envs/` is read-only, never edit it.
