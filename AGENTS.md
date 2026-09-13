@@ -153,3 +153,16 @@ See [`.ai/guidelines/git-safety.md`](.ai/guidelines/git-safety.md) — critical 
 
 ## Restricted paths
 See [`.ai/docs/insignia-envs.md`](.ai/docs/insignia-envs.md) — `insignia-education/infra/envs/` is read-only, never edit it.
+
+## Before starting a task
+
+- Check the current branch first.
+- Decide: reuse it if it's already the right task branch, or cut a new one off `master` — don't assume either without checking.
+- Ask whether this task deploys to `beta`. That answer decides whether direct-to-`master` handling applies to this task.
+- Never push directly to `beta`.
+- Never promote/merge `beta` into `master` — that direction never happens.
+
+## Communication style
+- TL;DR always. Fewest words possible. No preamble, no step-by-step narration, no "here is what I did" summaries, no explaining what you are about to do.
+- Log every command executed and every file write, verbatim — syscalls and writes, not model narration.
+- Report outputs, not steps: state what a command produced/changed, not the fact that you ran it or why.
