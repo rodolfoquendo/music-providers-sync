@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { api } from '../api/client'
+import AddFromYoutube from '../components/Playlists/AddFromYoutube'
 import PlaylistList from '../components/Playlists/PlaylistList'
 
 export default function Playlists() {
@@ -21,6 +22,8 @@ export default function Playlists() {
   useEffect(() => { load() }, [load])
 
   return (
+    <>
+    <AddFromYoutube onAdded={load} />
     <div className="card">
       <div className="card-header d-flex align-items-center gap-2">
         <i className="bi bi-collection-fill" />
@@ -31,5 +34,6 @@ export default function Playlists() {
         <PlaylistList playlists={playlists} loading={loading} onToggle={load} />
       </div>
     </div>
+    </>
   )
 }

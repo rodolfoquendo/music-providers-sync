@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import { api } from '../../api/client'
 import { usePlayer } from '../../contexts/PlayerContext'
 
@@ -56,7 +57,7 @@ export default function PlaylistList({ playlists, loading, onToggle }) {
               </div>
           }
           <div className="flex-grow-1">
-            <div className="fw-semibold">{pl.name}</div>
+            <Link to={`/playlists/${pl.id}`} className="fw-semibold text-body text-decoration-none">{pl.name}</Link>
             <div className="small text-secondary">
               <i className={`bi ${SOURCE_ICON[pl.source]} me-1`} />
               {pl.track_count} tracks

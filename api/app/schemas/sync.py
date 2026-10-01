@@ -9,7 +9,7 @@ class SyncRequest(BaseModel):
 
 class SyncLogOut(BaseModel):
     id: int
-    direction: Literal["spotify_import", "youtube_export", "local_scan"]
+    direction: Literal["spotify_import", "youtube_export", "local_scan", "youtube_download", "youtube_video_search"]
     status: Literal["pending", "running", "success", "failed"]
     playlist_id: Optional[int] = None
     stats: Optional[Any] = None

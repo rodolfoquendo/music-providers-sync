@@ -10,7 +10,7 @@ services:
       - "host.docker.internal:host-gateway"
     volumes:
       - ./api:/app
-      - ${MUSIC_LOCAL_PATH:-/tmp/music}:${MUSIC_LOCAL_PATH:-/tmp/music}:ro
+      - ${MUSIC_LOCAL_PATH:-/tmp/music}:${MUSIC_LOCAL_PATH:-/tmp/music}
 
   music-front:
     build: ./front

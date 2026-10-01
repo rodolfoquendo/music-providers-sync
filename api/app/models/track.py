@@ -29,11 +29,22 @@ class Track(Base):
     youtube_id = Column(String(100), nullable=True, index=True)
     youtube_url = Column(Text, nullable=True)
 
+    # YouTube video version (music video), separate from the YTM audio match above
+    youtube_video_id = Column(String(100), nullable=True, index=True)
+    youtube_video_url = Column(Text, nullable=True)
+    youtube_video_checked_at = Column(DateTime, nullable=True)  # set once searched, found or not
+
     # Local
     local_path = Column(Text, nullable=True)
     local_filename = Column(String(500), nullable=True)
     local_format = Column(String(20), nullable=True)
     local_bitrate = Column(Integer, nullable=True)
+
+    # Manual download queue: requested via the UI, fulfilled by services/download_worker.py
+    requested_download_at = Column(DateTime, nullable=True)
+    download_source = Column(String(10), nullable=True)  # "video" (youtube_video_id) or "audio" (youtube_id)
+    downloaded_at = Column(DateTime, nullable=True)
+    download_error = Column(Text, nullable=True)  # set when the worker gave up; a new request clears it
 
     created_at = Column(DateTime, server_default=func.now())
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())

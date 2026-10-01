@@ -1,0 +1,4 @@
+/* Bootstrap's py-3 sets padding-bottom with !important, so the clearance for the fixed player bar needs !important too. */
+.main-with-player {
+  padding-bottom: 100px !important;
+}
