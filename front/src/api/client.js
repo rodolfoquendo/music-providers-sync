@@ -31,11 +31,25 @@ export const api = {
   },
   getTrack: (id) => request(`/tracks/${id}`),
   getTracksBatch: (ids) => request(`/tracks/batch?ids=${ids.join(',')}`),
+  addFromYoutube: (url) =>
+    request('/tracks/from-youtube', { method: 'POST', body: JSON.stringify({ url }) }),
+  updateTrackMetadata: (id, data) =>
+    request(`/tracks/${id}/metadata`, { method: 'PATCH', body: JSON.stringify(data) }),
+  setYoutubeVideo: (id, youtube_video_url) =>
+    request(`/tracks/${id}/youtube-video`, { method: 'PATCH', body: JSON.stringify({ youtube_video_url }) }),
+  findYoutubeVideo: (id) => request(`/tracks/${id}/find-youtube-video`, { method: 'POST' }),
+  downloadTrack: (id, source = 'video') =>
+    request(`/tracks/${id}/download?source=${source}`, { method: 'POST' }),
   streamUrl: (id) => `${BASE}/tracks/${id}/stream`,
 
   // Playlists
   getPlaylists: () => request('/playlists'),
   getPlaylistTrackIds: (id) => request(`/playlists/${id}/track-ids`),
+  getPlaylist: (id) => request(`/playlists/${id}`),
+  getPlaylistTracks: (id, params = {}) => {
+    const qs = new URLSearchParams(params).toString()
+    return request(`/playlists/${id}/tracks${qs ? `?${qs}` : ''}`)
+  },
   updatePlaylist: (id, data) => request(`/playlists/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
 
   // Sync

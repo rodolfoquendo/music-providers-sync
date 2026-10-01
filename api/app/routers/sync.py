@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 from ..database import get_db, SessionLocal
 from ..models import Track, Playlist, PlaylistTrack, SyncLog
 from ..schemas.sync import SyncRequest, SyncLogOut
-from ..services import spotify_service, youtube_service
+from ..services import spotify_service, youtube_service, video_worker
 
 router = APIRouter(prefix="/sync", tags=["sync"])
 
@@ -34,6 +34,15 @@ def sync_to_youtube(body: SyncRequest, background_tasks: BackgroundTasks, db: Se
         raise HTTPException(409, f"A YouTube export is already running (log id={running.id}).")
     background_tasks.add_task(_run_youtube_export, body.playlist_ids)
     return {"message": "YouTube Music export started in background"}
+
+
+@router.get("/youtube/videos/status")
+def youtube_videos_status(db: Session = Depends(get_db)):
+    """Progress of the background worker that fills tracks.youtube_video_id."""
+    matched = db.query(Track).filter(Track.youtube_video_id.isnot(None)).count()
+    pending = db.query(Track).filter(Track.youtube_video_id.is_(None), Track.youtube_video_checked_at.is_(None)).count()
+    not_found = db.query(Track).filter(Track.youtube_video_id.is_(None), Track.youtube_video_checked_at.isnot(None)).count()
+    return {"worker_running": video_worker.is_running(), "matched": matched, "pending": pending, "not_found": not_found}
 
 
 def _upsert_track(db: Session, data: dict) -> Track:

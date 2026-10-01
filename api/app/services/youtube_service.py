@@ -4,6 +4,7 @@ from ytmusicapi import YTMusic
 from ..config import get_settings
 
 _client: Optional[YTMusic] = None
+_anon_client: Optional[YTMusic] = None
 
 
 def get_client() -> Optional[YTMusic]:
@@ -36,6 +37,21 @@ def search_track(title: str, artist: str) -> Optional[str]:
     except Exception:
         pass
     return None
+
+
+def search_video(title: str, artist: str) -> Optional[str]:
+    """Best matching YouTube *video* ID (music video), or None if there is no result.
+
+    Raises on search errors so callers can tell "not found" from "failed".
+    """
+    global _anon_client
+    yt = get_client()
+    if not yt:
+        if _anon_client is None:
+            _anon_client = YTMusic()  # search needs no auth
+        yt = _anon_client
+    results = yt.search(f"{title} {artist}", filter="videos", limit=1)
+    return results[0].get("videoId") if results else None
 
 
 def get_playlists() -> list[dict]:

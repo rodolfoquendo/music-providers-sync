@@ -116,7 +116,7 @@ Tables created automatically on first API startup via `Base.metadata.create_all`
 5. **Re-auth required** when the session expires (~30 days)
 
 ### Local music
-Set `MUSIC_LOCAL_PATH` in `.env` to an absolute folder path. The container mounts it read-only.
+Set `MUSIC_LOCAL_PATH` in `.env` to an absolute folder path. The container mounts it read-write. yt-dlp downloads land in `<MUSIC_LOCAL_PATH>/<artist>/<year> - <album>/<title>.mp3`.
 
 ## Sync flow
 
@@ -130,6 +130,15 @@ Set `MUSIC_LOCAL_PATH` in `.env` to an absolute folder path. The container mount
 `POST /sync/youtube` runs in the background:
 - For each sync-enabled playlist, creates/finds the YTM playlist by name
 - Adds tracks (by `youtube_id`) to the YTM playlist
+
+**YouTube → local (yt-dlp), manual only:**
+`POST /tracks/{id}/download?source=video|audio` (button on the playlist detail page) downloads that track's YouTube video match (`youtube_video_id`) or YTM audio match (`youtube_id`):
+- Always transcoded to mp3 128 kbps via yt-dlp + `ffmpeg` (in the API image), tagged from DB metadata
+- Sets `local_path`/`local_filename`/`local_format`/`local_bitrate`, so the player uses the HTML5 `<audio>` source
+- Never runs automatically or in bulk
+
+**Background YouTube video matcher:**
+`services/video_worker.py` is a daemon thread started in the FastAPI lifespan. It loops forever: finds tracks with no `youtube_video_id` and no `youtube_video_checked_at`, searches YouTube (videos filter), stores the match, stamps `youtube_video_checked_at` (also when nothing is found, so misses aren't retried), then idles 60s when nothing is pending. Search errors back off 60s and leave the track unchecked. Clearing a video in the UI also stamps `checked_at`, so the worker won't refill it. Progress: `GET /sync/youtube/videos/status`. Disable with `YOUTUBE_VIDEO_WORKER_ENABLED=false`; throttle with `YOUTUBE_VIDEO_WORKER_DELAY` (seconds).
 
 ## Player priority
 ```

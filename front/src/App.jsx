@@ -4,6 +4,7 @@ import { PlayerProvider } from './contexts/PlayerContext'
 import GlobalPlayer from './components/Player/GlobalPlayer'
 import Home from './pages/Home'
 import Playlists from './pages/Playlists'
+import PlaylistDetail from './pages/PlaylistDetail'
 import Sync from './pages/Sync'
 import Settings from './pages/Settings'
 
@@ -44,10 +45,11 @@ export default function App() {
       <PlayerProvider>
         <div className="d-flex flex-column min-vh-100 bg-body-tertiary">
           <Nav />
-          <main className="container-fluid py-3 px-3 flex-grow-1" style={{ paddingBottom: '80px' }}>
+          <main className="container-fluid py-3 px-3 flex-grow-1 main-with-player">
             <Routes>
               <Route path="/" element={<Home />} />
               <Route path="/playlists" element={<Playlists />} />
+              <Route path="/playlists/:id" element={<PlaylistDetail />} />
               <Route path="/sync" element={<Sync />} />
               <Route path="/settings" element={<Settings />} />
             </Routes>

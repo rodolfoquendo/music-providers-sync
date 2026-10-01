@@ -9,7 +9,7 @@ class SyncLog(Base):
     __tablename__ = "sync_logs"
 
     id = Column(BigInteger, primary_key=True, autoincrement=True)
-    direction = Column(Enum("spotify_import", "youtube_export", "local_scan"), nullable=False)
+    direction = Column(Enum("spotify_import", "youtube_export", "local_scan", "youtube_download", "youtube_video_search"), nullable=False)
     status = Column(Enum("pending", "running", "success", "failed"), default="pending")
     playlist_id = Column(BigInteger, ForeignKey("playlists.id", ondelete="SET NULL"), nullable=True)
     stats = Column(JSON, nullable=True)

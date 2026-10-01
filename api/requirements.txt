@@ -8,6 +8,8 @@ pydantic==2.10.3
 pydantic-settings==2.6.1
 spotipy==2.24.0
 ytmusicapi==1.8.2
+yt-dlp[default]>=2026.8.19
+deno
 mutagen==1.47.0
 python-multipart==0.0.20
 python-dotenv==1.0.1

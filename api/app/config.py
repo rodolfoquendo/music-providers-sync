@@ -23,6 +23,13 @@ class Settings(BaseSettings):
     # Local music
     music_local_path: str = "/music"
 
+    # Background worker that fills tracks.youtube_video_id
+    youtube_video_worker_enabled: bool = True
+    youtube_video_worker_delay: float = 1.0  # seconds between searches
+
+    # Background worker that downloads tracks with requested_download_at set
+    download_worker_enabled: bool = True
+
     # App
     cors_origins: str = "http://localhost:3002,http://localhost:5173"
     secret_key: str = "change-me-in-production"
