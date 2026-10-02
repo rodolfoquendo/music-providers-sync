@@ -10,3 +10,4 @@ dist/
 .vite/
 *.log
 oauth.json.DS_Store
+api/app/oauth.json
